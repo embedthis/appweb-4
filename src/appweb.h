@@ -105,6 +105,13 @@ typedef int (MaDirective)(MaState *state, cchar *key, cchar *value);
  */
 PUBLIC void maAddDirective(cchar *directive, MaDirective proc);
 
+
+/**
+    Reset to 0 directives variable from config.c
+*/
+PUBLIC int maConfigParsingDestroy();
+
+
 /** 
     Configure a web server
     @description This will configure a web server based on either a configuration file or using the supplied

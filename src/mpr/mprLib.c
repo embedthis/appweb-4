@@ -18128,6 +18128,10 @@ static MprList *getDirFiles(cchar *path)
         fileInfo.isDir = (ri->size == 0);
         fileInfo.isLink = 0;
         if ((dp = mprAllocObj(MprDirEntry, manageDirEntry)) == 0) {
+            /*
+            Dir should be closed even in errors
+            */
+            closedir(dir);
             return list;
         }
         dp->name = sclone(ri->path);
@@ -19561,6 +19565,10 @@ PUBLIC char *mprSearchPath(cchar *file, int flags, cchar *search, ...)
         while (dir && *dir) {
             path = mprJoinPath(dir, file);
             if ((result = checkPath(path, flags)) != 0) {
+                /*
+                va should be closed even in errors
+                */
+                va_end(args);
                 return mprNormalizePath(result);
             }
             if ((flags & MPR_SEARCH_EXE) && *ME_EXE) {
@@ -19785,6 +19793,10 @@ PUBLIC int mprGetRandomBytes(char *buf, ssize length, bool block)
     do {
         rc = read(fd, &buf[sofar], length);
         if (rc < 0) {
+            /*
+            file descritor was not closed
+            */
+            close(fd);
             assert(0);
             return MPR_ERR_CANT_READ;
         }
@@ -24109,9 +24121,12 @@ PUBLIC char *scamel(cchar *str)
  */
 PUBLIC int scaselesscmp(cchar *s1, cchar *s2)
 {
-    if (s1 == 0 || s2 == 0) {
+    /*
+    Dead code
+    */
+    /*if (s1 == 0 || s2 == 0) {
         return -1;
-    } else if (s1 == 0) {
+    } else*/ if (s1 == 0) {
         return -1;
     } else if (s2 == 0) {
         return 1;
@@ -24344,6 +24359,10 @@ PUBLIC char *sjoinv(cchar *buf, va_list args)
         str = va_arg(ap, char*);
     }
     *dp = '\0';
+    /*
+    va should be closed
+    */
+    va_end(ap);
     return dest;
 }
 
@@ -24385,10 +24404,12 @@ PUBLIC int sncaselesscmp(cchar *s1, cchar *s2, ssize n)
     int     rc;
 
     assert(0 <= n && n < MAXINT);
-
-    if (s1 == 0 || s2 == 0) {
+    /*
+    Dead Code
+    */
+    /*if (s1 == 0 || s2 == 0) {
         return -1;
-    } else if (s1 == 0) {
+    } else */if (s1 == 0) {
         return -1;
     } else if (s2 == 0) {
         return 1;
@@ -24648,6 +24669,10 @@ PUBLIC char *srejoinv(char *buf, va_list args)
         str = va_arg(ap, char*);
     }
     *dp = '\0';
+    /*
+    va should be closed
+    */
+    va_end(ap);
     return dest;
 }
 
