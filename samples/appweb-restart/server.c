@@ -266,7 +266,7 @@ MAIN(appweb, int argc, char **argv, char **envp)
         status = mprGetExitStatus();
         mprLog("info appweb", 1, "Stopping Appweb ...");
         mprDestroy();
-        maConfigParsingDestroy();
+        //maConfigParsingDestroy();
     } while (!stop);
     return status;
 }

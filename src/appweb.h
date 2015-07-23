@@ -109,7 +109,7 @@ PUBLIC void maAddDirective(cchar *directive, MaDirective proc);
 /**
     Reset to 0 directives variable from config.c
 */
-PUBLIC int maConfigParsingDestroy();
+PUBLIC void maConfigParsingDestroy();
 
 
 /** 

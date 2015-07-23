@@ -105,13 +105,12 @@ PUBLIC int maConfigureServer(cchar *configFile, cchar *home, cchar *documents, c
 }
 
 
-PUBLIC int maConfigParsingDestroy()
+PUBLIC void maConfigParsingDestroy(int state, int exitStrategy, int status)
 {
     if (directives)
     {
         directives = 0;
     }
-    return 0;
 }
 
 
@@ -3595,6 +3594,9 @@ static int parseInit()
     /* Use Trace */
     maAddDirective("Log", logDirective);
 #endif
+
+    mprAddTerminator(maConfigParsingDestroy);
+
     return 0;
 }
 
