@@ -1722,7 +1722,7 @@ PUBLIC bool httpLogin(HttpConn *conn, cchar *username, cchar *password)
         /*
         Our custom logins already has created the session, because muse maps the session to the user
         */
-        if ((session = httpGetSession(conn, 1)) == 0) {
+        if ((session = httpCreateSession(conn)) == 0) {
             /* Too many sessions */
             return 0;
         }
