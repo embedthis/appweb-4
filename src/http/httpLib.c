@@ -320,6 +320,11 @@ PUBLIC void httpDestroy()
     httpStopConnections(0);
     httpStopEndpoints();
 
+    /*
+    Reset Global var, that was preventing appweb from resetting
+    */
+    httpSetDefaultHost(0);
+
     if (http->timer) {
         mprRemoveEvent(http->timer);
         http->timer = 0;
@@ -1714,6 +1719,9 @@ PUBLIC bool httpLogin(HttpConn *conn, cchar *username, cchar *password)
         return 0;
     }
     if (!(auth->flags & HTTP_AUTH_NO_SESSION) && !auth->store->noSession) {
+        /*
+        Our custom logins already has created the session, because muse maps the session to the user
+        */
         if ((session = httpCreateSession(conn)) == 0) {
             /* Too many sessions */
             return 0;
@@ -2647,7 +2655,10 @@ PUBLIC void httpAddCache(HttpRoute *route, cchar *methods, cchar *uris, cchar *e
         cache->types = mprCreateHash(0, MPR_HASH_STABLE);
         for (item = stok(sclone(types), " \t,", &tok); item; item = stok(0, " \t,", &tok)) {
             if (smatch(item, "*")) {
-                extensions = 0;
+                /*
+                Copy error, probably,clearing extension twice is no use
+                */
+                types = 0;
             } else {
                 mprAddKey(cache->types, item, cache);
             }
@@ -4060,7 +4071,10 @@ static void parseAuthRoles(HttpRoute *route, cchar *key, MprJson *prop)
     int         ji;
 
     for (ITERATE_CONFIG(route, prop, child, ji)) {
-        if (httpAddRole(route->auth, child->name, getList(child)) < 0) {
+        /*
+        httpAddrole returns an uint, with 0 has an error
+        */
+        if (httpAddRole(route->auth, child->name, getList(child)) == 0) {
             httpParseError(route, "Cannot add role %s", child->name);
             break;
         }
@@ -4132,7 +4146,10 @@ static void parseAuthUsers(HttpRoute *route, cchar *key, MprJson *prop)
     for (ITERATE_CONFIG(route, prop, child, ji)) {
         password = mprReadJson(child, "password");
         roles = getList(mprReadJsonObj(child, "roles"));
-        if (httpAddUser(route->auth, child->name, password, roles) < 0) {
+        /*
+        httpAddUser returns an uint, with 0 has an error
+        */
+        if (httpAddUser(route->auth, child->name, password, roles) == 0) {
             httpParseError(route, "Cannot add user %s", child->name);
             break;
         }
@@ -9206,7 +9223,10 @@ static void printRoute(HttpRoute *route, int idx, bool full, int methodsLen, int
             }
         }
     } else {
-        printf("%-*s %-*s %-*s\n", patternLen, pattern, methodsLen, methods ? methods : "*", targetLen, target);
+        /*
+        method is already something or *
+        */
+        printf("%-*s %-*s %-*s\n", patternLen, pattern, methodsLen, methods, targetLen, target);
     }
 }
 
@@ -9820,6 +9840,10 @@ PUBLIC int64 httpMonitorEvent(HttpConn *conn, int counterIndex, int64 adj)
                 mprSetManager(address, (MprManager) manageAddress);
             }
             if (!address) {
+                /*
+                http->address should unlock, even in error cases
+                */
+                unlock(http->addresses);
                 return 0;
             }
             address->ncounters = ncounters;
@@ -21894,8 +21918,11 @@ PUBLIC char *httpFormatUri(cchar *scheme, cchar *host, int port, cchar *path, cc
         queryDelim = "?";
     } else {
         queryDelim = query = "";
-    }
-    if (portDelim) {
+    }        
+    /*
+    portDelim ptr cannot be null, but the string can be empty
+    */
+    if (portDelim[0]!='\0') {
         uri = sjoin(scheme, hostDelim, host, portDelim, portStr, pathDelim, path, referenceDelim, reference, 
             queryDelim, query, NULL);
     } else {

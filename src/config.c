@@ -105,6 +105,15 @@ PUBLIC int maConfigureServer(cchar *configFile, cchar *home, cchar *documents, c
 }
 
 
+PUBLIC void maConfigParsingDestroy(int state, int exitStrategy, int status)
+{
+    if (directives)
+    {
+        directives = 0;
+    }
+}
+
+
 static int openConfig(MaState *state, cchar *path)
 {
     assert(state);
@@ -1751,7 +1760,7 @@ static int makeDirDirective(MaState *state, cchar *key, cchar *value)
         if (group && *group) {
             if (snumber(group)) {
                 gid = (int) stoi(group);
-            } else if (smatch(owner, "APPWEB")) {
+            } else if (smatch(group, "APPWEB")) {
                 gid = HTTP->gid;
             } else {
                 gid = groupToID(group);
@@ -2236,7 +2245,10 @@ static int roleDirective(MaState *state, cchar *key, cchar *value)
     if (!maTokenize(state, value, "%S ?*", &name, &abilities)) {
         return MPR_ERR_BAD_SYNTAX;
     }
-    if (httpAddRole(state->auth, name, abilities) < 0) {
+    /*
+    bug : httpAddRole == 0 on failures, smaller then 0 makes error detection impossible
+    */
+    if (httpAddRole(state->auth, name, abilities) == 0) {
         mprLog("error appweb config", 0, "Cannot add role %s", name);
         return MPR_ERR_BAD_SYNTAX;
     }
@@ -3121,6 +3133,10 @@ PUBLIC bool maTokenize(MaState *state, cchar *line, cchar *fmt, ...)
     if (!httpTokenizev(state->route, line, fmt, ap)) {
         mprLog("error appweb config", 0, "Bad \"%s\" directive at line %d in %s, line: %s %s", 
                 state->key, state->lineNumber, state->filename, state->key, line);
+        /*
+        va_end was not ended in case of an error
+        */
+        va_end(ap); 
         return 0;
     }
     va_end(ap);
@@ -3578,6 +3594,9 @@ static int parseInit()
     /* Use Trace */
     maAddDirective("Log", logDirective);
 #endif
+
+    mprAddTerminator(maConfigParsingDestroy);
+
     return 0;
 }
 
